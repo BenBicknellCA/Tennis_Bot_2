@@ -242,4 +242,4 @@ let resp = client
     .execute(request)
     .await?
     .json::<Vec<Location>>()
-    .await?
+    .await?;}
