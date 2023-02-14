@@ -1,3 +1,6 @@
+mod live;
+
+extern crate serde_json;
 use dotenv::dotenv;
 use model::application::interaction::InteractionResponseType;
 use serenity::{
@@ -11,10 +14,36 @@ use serenity::{
     prelude::*,
 };
 use std::env;
-use tracing::{error, info};
-const HELP_MESSAGE: &str = "help message";
 
-struct Bot;
+use tracing::{error, info};
+
+const HELP_MESSAGE: &str = "help message";
+const GUILD_ID: GuildId = serenity::model::id::GuildId(***REMOVED***);
+struct Bot {
+    api_key: String,
+    client: reqwest::Client,
+    guild_id: GuildId,
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok().expect("Failed to read env file");
+    let api_key = env::var("API_KEY").expect("Expected an API key in the environment");
+    let token_id = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let mut client = Client::builder(&token_id, intents)
+        .event_handler(Bot {
+            api_key: api_key.to_owned(),
+            client: reqwest::Client::new(),
+            guild_id: GuildId(GUILD_ID.into()),
+        })
+        .await
+        .expect("Err creating client");
+
+    if let Err(why) = client.start().await {
+        println!("Client error: {:?}", why)
+    }
+}
 
 #[async_trait]
 impl EventHandler for Bot {
@@ -30,12 +59,14 @@ impl EventHandler for Bot {
         dotenv().ok();
         println!("{} is connected!", ready.user.name);
 
-        let guild_id = GuildId(***REMOVED***);
-
-        let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            commands.create_application_command(|command| {
-                command.name("hello").description("say hello")
-            })
+        let commands = GuildId::set_application_commands(&self.guild_id, &ctx.http, |commands| {
+            commands
+                .create_application_command(|command| {
+                    command.name("hello").description("say hello")
+                })
+                .create_application_command(|command| {
+                    command.name("live").description("Show live matches")
+                })
         })
         .await
         .unwrap();
@@ -47,7 +78,15 @@ impl EventHandler for Bot {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                command => unreachable!("Unkown command: {}", command),
+                "live" => match live::get_matches(&self.api_key, &self.client).await {
+                    Ok(live) => {
+                        format!("Live matches: {:?}", live)
+                    }
+                    Err(err) => {
+                        format!("Err: {}", err)
+                    }
+                },
+                command => unreachable!("Unknown command: {}", command),
             };
 
             let create_interaction_response =
@@ -61,20 +100,5 @@ impl EventHandler for Bot {
                 eprintln!("Cannot respond to slash command: {}", why)
             }
         }
-    }
-}
-#[tokio::main]
-async fn main() {
-    dotenv().ok();
-    let token_id = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-
-    let mut client = Client::builder(&token_id, intents)
-        .event_handler(Bot)
-        .await
-        .expect("Err creating client");
-
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why)
     }
 }

@@ -234,12 +234,13 @@ pub async fn get_matches(
 ) -> Result<(Struc8, Struct3), Box<dyn std::error::Error>> {
     const MATCHES: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/live";
 
-let url = format!("{}?apikey={}", MATCHES, api_key);
+    let url = format!("{}?apikey={}", MATCHES, api_key);
 
-let request = client.get(url).build.unwrap();
+    let request = client.get(url).build.unwrap();
 
-let resp = client
-    .execute(request)
-    .await?
-    .json::<Vec<Location>>()
-    .await?;}
+    let resp = client
+        .execute(request)
+        .await?
+        .json::<Vec<Location>>()
+        .await?;
+}
