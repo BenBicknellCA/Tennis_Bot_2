@@ -1,150 +1,313 @@
 use reqwest::Client;
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
 extern crate serde;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Live {
-    events: Vec<Event>,
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+use serde_json::Value;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Root {
+    pub events: Vec<Event>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Event {
-    #[serde(rename = "awayScore")]
-    away_score: HashMap<String, Option<i64>>,
-    #[serde(rename = "awayTeam")]
-    away_team: Team,
-    changes: Changes,
-    #[serde(rename = "customId")]
-    custom_id: String,
-    #[serde(rename = "finalResultOnly")]
-    final_result_only: bool,
-    #[serde(rename = "firstToServe")]
-    first_to_serve: Option<serde_json::Value>,
-    #[serde(rename = "hasGlobalHighlights")]
-    has_global_highlights: bool,
-    #[serde(rename = "homeScore")]
-    home_score: HashMap<String, Option<i64>>,
-    #[serde(rename = "homeTeam")]
-    home_team: Team,
-    id: i64,
-    #[serde(rename = "lastPeriod")]
-    last_period: String,
-    periods: Periods,
-    #[serde(rename = "roundInfo")]
-    round_info: RoundInfo,
-    slug: String,
-    #[serde(rename = "startTimestamp")]
-    start_timestamp: i64,
-    status: Status,
-    time: Time,
-    tournament: Tournament,
-    #[serde(rename = "winnerCode")]
-    winner_code: i64,
+    pub away_score: AwayScore,
+    pub away_team: Team,
+    pub changes: Changes,
+    pub custom_id: String,
+    pub final_result_only: bool,
+    pub first_to_serve: Option<i64>,
+    pub has_global_highlights: bool,
+    pub home_score: HomeScore,
+    pub home_team: Team,
+    pub id: Option<i64>,
+    pub last_period: String,
+    pub periods: Periods,
+    pub round_info: RoundInfo,
+    pub slug: String,
+    pub start_timestamp: Option<i64>,
+    pub status: Status,
+    pub time: Time,
+    pub tournament: Tournament,
+    pub winner_code: Option<i64>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AwayScore {
+    pub current: Option<i64>,
+    pub display: Option<i64>,
+    pub normaltime: Option<Value>,
+    pub period1: Option<i64>,
+    #[serde(rename = "period1TieBreak")]
+    pub period1tie_break: Option<i64>,
+    pub period2: Option<i64>,
+    #[serde(rename = "period2TieBreak")]
+    pub period2tie_break: Option<Value>,
+    pub period3: Option<i64>,
+    #[serde(rename = "period3TieBreak")]
+    pub period3tie_break: Option<Value>,
+    pub period4: Option<Value>,
+    pub period5: Option<Value>,
+    #[serde(rename = "period5TieBreak")]
+    pub period5tie_break: Option<Value>,
+    pub point: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Team {
-    disabled: Option<bool>,
-    id: i64,
-    name: String,
-    #[serde(rename = "shortName")]
-    short_name: String,
-    slug: String,
-    sport: Sport,
-    #[serde(rename = "subTeams")]
-    sub_teams: Vec<Option<serde_json::Value>>,
-    #[serde(rename = "teamColors")]
-    team_colors: TeamColors,
+    pub disabled: Value,
+    pub id: Option<i64>,
+    pub name: String,
+    pub short_name: String,
+    pub slug: String,
+    pub sport: Sport,
+    pub sub_teams: Vec<SubTeam>,
+    pub team_colors: TeamColors2,
     #[serde(rename = "type")]
-    team_type: i64,
-    #[serde(rename = "userCount")]
-    user_count: i64,
+    pub type_field: Option<i64>,
+    pub user_count: Option<i64>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Sport {
-    id: i64,
-    name: String,
-    slug: String,
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
 }
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TeamColors {
-    primary: String,
-    secondary: String,
-    text: String,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Changes {
-    #[serde(rename = "changeTimestamp")]
-    change_timestamp: i64,
-    changes: Vec<String>,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Periods {
-    current: String,
-    period1: String,
-    period2: String,
-    period3: String,
-    period4: String,
-    period5: String,
-    point: i64,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RoundInfo {
-    #[serde(rename = "cupRoundType")]
-    cup_round_type: Option<serde_json::Value>,
-    name: String,
-    round: i64,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Status {
-    code: i64,
-    description: String,
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubTeam {
+    pub disabled: Value,
+    pub gender: String,
+    pub id: Option<i64>,
+    pub name: String,
+    pub name_code: String,
+    pub national: bool,
+    pub ranking: Option<i64>,
+    pub short_name: String,
+    pub slug: String,
+    pub sport: Sport2,
+    pub sub_teams: Vec<Value>,
+    pub team_colors: TeamColors,
     #[serde(rename = "type")]
-    status_type: String,
+    pub type_field: Option<i64>,
+    pub user_count: Option<i64>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport2 {
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamColors {
+    pub primary: String,
+    pub secondary: String,
+    pub text: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamColors2 {
+    pub primary: String,
+    pub secondary: String,
+    pub text: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Changes {
+    pub change_timestamp: Option<i64>,
+    pub changes: Vec<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomeScore {
+    pub current: Option<i64>,
+    pub display: Option<i64>,
+    pub normaltime: Option<Value>,
+    pub period1: Option<i64>,
+    #[serde(rename = "period1TieBreak")]
+    pub period1tie_break: Option<i64>,
+    pub period2: Option<i64>,
+    #[serde(rename = "period2TieBreak")]
+    pub period2tie_break: Option<Value>,
+    pub period3: Option<i64>,
+    #[serde(rename = "period3TieBreak")]
+    pub period3tie_break: Option<Value>,
+    pub period4: Option<Value>,
+    pub period5: Option<Value>,
+    #[serde(rename = "period5TieBreak")]
+    pub period5tie_break: Option<Value>,
+    pub point: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport3 {
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubTeam2 {
+    pub disabled: Value,
+    pub gender: String,
+    pub id: Option<i64>,
+    pub name: String,
+    pub name_code: String,
+    pub national: bool,
+    pub ranking: Option<i64>,
+    pub short_name: String,
+    pub slug: String,
+    pub sport: Sport4,
+    pub sub_teams: Vec<Value>,
+    pub team_colors: TeamColors3,
+    #[serde(rename = "type")]
+    pub type_field: Option<i64>,
+    pub user_count: Option<i64>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport4 {
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamColors3 {
+    pub primary: String,
+    pub secondary: String,
+    pub text: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamColors4 {
+    pub primary: String,
+    pub secondary: String,
+    pub text: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Periods {
+    pub current: String,
+    pub period1: String,
+    pub period2: String,
+    pub period3: String,
+    pub period4: String,
+    pub period5: String,
+    pub point: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoundInfo {
+    pub cup_round_type: Option<i64>,
+    pub name: String,
+    pub round: Option<i64>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Status {
+    pub code: Option<i64>,
+    pub description: String,
+    #[serde(rename = "type")]
+    pub type_field: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Time {
-    #[serde(rename = "currentPeriodStartTimestamp")]
-    current_period_start_timestamp: i64,
+    pub current_period_start_timestamp: Option<i64>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Tournament {
-    category: Category,
-    id: i64,
-    name: String,
-    priority: i64,
-    slug: String,
-    #[serde(rename = "uniqueTournament")]
-    unique_tournament: UniqueTournament,
+    pub category: Category,
+    pub id: Option<i64>,
+    pub name: String,
+    pub priority: Option<i64>,
+    pub slug: String,
+    pub unique_tournament: UniqueTournament,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Category {
-    flag: String,
-    id: i64,
-    name: String,
-    slug: String,
-    sport: Sport,
+    pub flag: String,
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+    pub sport: Sport5,
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport5 {
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UniqueTournament {
-    category: Category,
-    #[serde(rename = "hasEventPlayerStatistics")]
-    has_event_player_statistics: bool,
-    #[serde(rename = "hasPositionGraph")]
-    has_position_graph: Option<serde_json::Value>,
-    id: i64,
-    name: String,
-    slug: String,
-    #[serde(rename = "userCount")]
-    user_count: i64,
+    pub category: Category2,
+    pub has_event_player_statistics: bool,
+    pub has_position_graph: Value,
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+    pub user_count: Option<i64>,
 }
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Category2 {
+    pub flag: String,
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+    pub sport: Sport6,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport6 {
+    pub id: Option<i64>,
+    pub name: String,
+    pub slug: String,
+}
+
 impl Display for Team {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
 }
+
 #[derive(Debug)]
 pub struct CouldNotFindPlayer {
     name: String,
@@ -171,17 +334,40 @@ impl Display for CouldNotFindPlayer {
 //     Ok(resp)
 // }
 
-pub async fn get_matches(
-    api_key: &str,
-    client: &Client,
-) -> Result<Live, Box<dyn std::error::Error>> {
+// pub async fn return_players(
+//     events: Event,
+// ) -> Result<(HomeTeam, AwayTeam), Box<dyn std::error::Error>> {
+//     for i in events {
+//         let home = i.home_team;
+//         let away = i.away_team;
+//     }
+//     Ok(())
+// }
+
+// pub async fn events_loop(all_events: Root) -> (HomeTeam, AwayTeam) {
+//     let events = all_events.events;
+//     for i in events {
+//         let home = i.home_team;
+//         let away = i.away_team;
+//     }
+//     return (home, away);
+// }
+
+pub async fn get_matches(api_key: &str, client: &Client) -> Result<(), Box<dyn std::error::Error>> {
     const LIVE_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/live";
 
     let url = format!("{}?rapidapi-key={}", LIVE_URL, api_key);
 
     let request = client.get(url).build().unwrap();
 
-    let resp: Live = client.execute(request).await?.json().await?;
+    let resp: Root = client.execute(request).await?.json::<Root>().await?;
+    let event = resp.events.into_iter();
 
-    Ok(resp)
+    let results = for i in event {
+        let away = i.away_team;
+        let home = i.home_team;
+        println!("{} vs. {}", home, away)
+    };
+
+    Ok(results)
 }
