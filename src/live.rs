@@ -1,6 +1,5 @@
 use reqwest::Client;
 use std::fmt::Display;
-
 extern crate serde;
 
 use serde_derive::Deserialize;
@@ -307,6 +306,17 @@ impl Display for Team {
         write!(f, "{}", self.name)
     }
 }
+#[derive(Debug)]
+pub struct Match {
+    pub home_team_name: String,
+    pub away_team_name: String,
+}
+
+impl Display for Match {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} vs. {}", self.home_team_name, self.away_team_name)
+    }
+}
 
 #[derive(Debug)]
 pub struct CouldNotFindPlayer {
@@ -319,41 +329,21 @@ impl Display for CouldNotFindPlayer {
     }
 }
 
-// pub async fn get_matches(
-//     api_key: &str,
-//     client: &Client,
-// ) -> Result<Live, Box<dyn std::error::Error>> {
-//     const LIVE_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/live";
+pub async fn get_matches(root: Vec<Event>) {
+    let mut match_array_iter = root.into_iter().map(|team| {
+        let mut match_array: Vec<Match> = Vec::new();
+        let match_builder = Match {
+            home_team_name: team.home_team.name,
+            away_team_name: team.away_team.name,
+        };
+        match_array.push(match_builder);
+    });
+}
 
-//     let url = format!("{}?rapidapi-key={}", LIVE_URL, api_key);
-
-//     let request = client.get(url).build().unwrap();
-
-//     let resp = client.execute(request).await?.json::<Live>().await?;
-
-//     Ok(resp)
-// }
-
-// pub async fn return_players(
-//     events: Event,
-// ) -> Result<(HomeTeam, AwayTeam), Box<dyn std::error::Error>> {
-//     for i in events {
-//         let home = i.home_team;
-//         let away = i.away_team;
-//     }
-//     Ok(())
-// }
-
-// pub async fn events_loop(all_events: Root) -> (HomeTeam, AwayTeam) {
-//     let events = all_events.events;
-//     for i in events {
-//         let home = i.home_team;
-//         let away = i.away_team;
-//     }
-//     return (home, away);
-// }
-
-pub async fn get_matches(api_key: &str, client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn send_matches(
+    api_key: &str,
+    client: &Client,
+) -> Result<(), Box<dyn std::error::Error>> {
     const LIVE_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/live";
 
     let url = format!("{}?rapidapi-key={}", LIVE_URL, api_key);
@@ -361,13 +351,7 @@ pub async fn get_matches(api_key: &str, client: &Client) -> Result<(), Box<dyn s
     let request = client.get(url).build().unwrap();
 
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
-    let event = resp.events.into_iter();
+    let event = resp.events;
 
-    let results = for i in event {
-        let away = i.away_team;
-        let home = i.home_team;
-        println!("{} vs. {}", home, away)
-    };
-
-    Ok(results)
+    Ok(get_matches(event).await)
 }

@@ -14,7 +14,6 @@ use serenity::{
     prelude::*,
 };
 use std::env;
-
 use tracing::{error, info};
 
 const HELP_MESSAGE: &str = "help message";
@@ -78,7 +77,7 @@ impl EventHandler for Bot {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                "live" => match live::get_matches(&self.api_key, &self.client).await {
+                "live" => match live::send_matches(&self.api_key, &self.client).await {
                     Ok(live) => {
                         format!("Live matches: {:?}", live)
                     }
