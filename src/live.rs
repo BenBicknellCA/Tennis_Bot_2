@@ -1,5 +1,6 @@
+use itertools::Itertools;
 use reqwest::Client;
-use std::fmt::Display;
+use std::fmt;
 extern crate serde;
 
 use serde_derive::Deserialize;
@@ -301,18 +302,18 @@ pub struct Sport6 {
     pub slug: String,
 }
 
-impl Display for Team {
+impl fmt::Display for Team {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 #[derive(Debug)]
-pub struct Match {
+pub struct TennisMatch {
     pub home_team_name: String,
     pub away_team_name: String,
 }
 
-impl Display for Match {
+impl fmt::Display for TennisMatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} vs. {}", self.home_team_name, self.away_team_name)
     }
@@ -323,27 +324,36 @@ pub struct CouldNotFindPlayer {
     name: String,
 }
 
-impl Display for CouldNotFindPlayer {
+impl fmt::Display for CouldNotFindPlayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Placeholder 1 '{}'", self.name)
     }
 }
 
-pub async fn get_matches(root: Vec<Event>) {
-    let mut match_array_iter = root.into_iter().map(|team| {
-        let mut match_array: Vec<Match> = Vec::new();
-        let match_builder = Match {
+// impl fmt::Display for Vec<TennisMatch> {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         self.iter().fold(Ok(()), |result, tennis_match| {
+//             result.and_then(writeln!(f, "{}", tennis_match))
+//         })
+//     }
+// }
+
+pub fn get_matches(root: Vec<Event>) -> Vec<TennisMatch> {
+    let mut match_array: Vec<TennisMatch> = Vec::new();
+    for team in root {
+        let match_builder = TennisMatch {
             home_team_name: team.home_team.name,
             away_team_name: team.away_team.name,
         };
         match_array.push(match_builder);
-    });
+    }
+    return match_array;
 }
 
 pub async fn send_matches(
     api_key: &str,
     client: &Client,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<std::string::String, Box<dyn std::error::Error>> {
     const LIVE_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/live";
 
     let url = format!("{}?rapidapi-key={}", LIVE_URL, api_key);
@@ -352,6 +362,10 @@ pub async fn send_matches(
 
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let event = resp.events;
-
-    Ok(get_matches(event).await)
+    let match_results = get_matches(event);
+    let res = match_results
+        .iter()
+        .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
+        .to_string();
+    Ok(res)
 }

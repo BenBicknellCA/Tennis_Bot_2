@@ -79,7 +79,7 @@ impl EventHandler for Bot {
                 "hello" => "hello".to_owned(),
                 "live" => match live::send_matches(&self.api_key, &self.client).await {
                     Ok(live) => {
-                        format!("Live matches: {:?}", live)
+                        format!("{}", live)
                     }
                     Err(err) => {
                         format!("Err: {}", err)
