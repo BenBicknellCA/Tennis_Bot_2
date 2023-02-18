@@ -61,10 +61,10 @@ impl EventHandler for Bot {
         let commands = GuildId::set_application_commands(&self.guild_id, &ctx.http, |commands| {
             commands
                 .create_application_command(|command| {
-                    command.name("hello").description("say hello")
+                    command.name("live").description("Show live matches")
                 })
                 .create_application_command(|command| {
-                    command.name("live").description("Show live matches")
+                    command.name("today").description("Show today's matches")
                 })
         })
         .await
@@ -77,9 +77,17 @@ impl EventHandler for Bot {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                "live" => match live::send_matches(&self.api_key, &self.client).await {
+                "live" => match live::send_live(&self.api_key, &self.client).await {
                     Ok(live) => {
-                        format!("{}", live)
+                        format!("Ongoing matches: \n{}", live)
+                    }
+                    Err(err) => {
+                        format!("Err: {}", err)
+                    }
+                },
+                "today" => match live::send_today_schedule(&self.api_key, &self.client).await {
+                    Ok(today) => {
+                        format!("Today's remaining matches: \n{}", today)
                     }
                     Err(err) => {
                         format!("Err: {}", err)
