@@ -227,6 +227,8 @@ pub fn get_live_matches(root: Vec<Event>) -> std::string::String {
     }
 }
 
+// pub async fn get_player_matches(root: Vec<Event>) -> std::string::String {}
+
 pub async fn send_live(
     api_key: &str,
     client: &Client,
@@ -239,7 +241,6 @@ pub async fn send_live(
 
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let match_results: String = get_live_matches(resp.events);
-
     Ok(match_results)
 }
 
@@ -253,6 +254,17 @@ pub async fn send_today_schedule(
     let request: Request = client.get(url).build().unwrap();
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let match_results: String = get_todays_matches(resp.events);
-
     Ok(match_results)
 }
+
+// pub async fn send_player_status(
+//     api_key: &str,
+//     client: &Client,
+// ) -> Result<std::string::String, Box<dyn std::error::Error>> {
+//     const SCHED_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/";
+//     let url: String = format!("{}{}?rapidapi-key={}", SCHED_URL, api_key);
+//     let request: Request = client.get(url).build().unwrap();
+//     let resp: Root = client.execute(request).await?.json::<Root>().await?;
+//     let match_results: String = get_player_matches(resp.events);
+//     Ok(match_results)
+// }
