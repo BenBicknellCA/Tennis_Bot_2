@@ -2,8 +2,8 @@ extern crate serde;
 use chrono::{
     format::{DelayedFormat, StrftimeItems},
     prelude::*,
-    TimeZone, Utc,
 };
+use chrono_tz::America::Toronto;
 use itertools::Itertools;
 use reqwest::{Client, Request};
 use serde_derive::{Deserialize, Serialize};
@@ -289,7 +289,7 @@ impl fmt::Display for Team {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TennisMatch {
     pub home_team_name: String,
     pub away_team_name: String,
@@ -300,7 +300,7 @@ impl fmt::Display for TennisMatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} vs. {} / {}",
+            "{} vs. {} // {}",
             self.home_team_name, self.away_team_name, self.time
         )
     }
@@ -317,31 +317,65 @@ impl fmt::Display for CouldNotFindPlayer {
     }
 }
 
-pub fn get_matches(root: Vec<Event>) -> std::string::String {
-    let mut match_array: Vec<TennisMatch> = Vec::new();
+pub fn get_today() -> chrono::DateTime<chrono::Local> {
+    let date = chrono::Local::now();
+    date
+}
+pub fn time_builder(event: Event) -> chrono::NaiveDateTime {
+    let time_stamp = if event.time.current_period_start_timestamp.is_some() {
+        NaiveDateTime::from_timestamp_opt(event.time.current_period_start_timestamp.unwrap(), 0)
+            .unwrap()
+    } else {
+        NaiveDateTime::from_timestamp_opt(event.start_timestamp.unwrap(), 0).unwrap()
+    };
 
+    time_stamp
+}
+
+pub fn get_matches(root: Vec<Event>) -> std::string::String {
+    // consider iter
+    let mut match_array: Vec<TennisMatch> = Vec::new();
+    let today_day = get_today().format("%d/%m/%Y").to_string();
     for team in root {
-        if (team.tournament.category.flag == "atp") && (team.status.type_field == "notstarted") {
-            let time = Utc
-                .timestamp_millis_opt(team.start_timestamp.unwrap())
-                .unwrap();
-            let time_minute = time.minute().to_string();
-            let (is_pm, time) = time.hour12();
-            let time_updated = if is_pm { "PM" } else { "AM" };
-            let match_time = time.to_string() + ":" + &time_minute + time_updated + " EST";
-            let match_builder: TennisMatch = TennisMatch {
-                home_team_name: team.home_team.name,
-                away_team_name: team.away_team.name,
-                time: match_time,
-            };
-            match_array.push(match_builder)
-        };
+        if team.tournament.category.name == "ATP" && team.status.type_field == "notstarted" {
+            let event_day = time_builder(team.clone()).format("%d/%m/%Y").to_string();
+            if today_day == event_day {
+                {
+                    let time_stamp = if team.time.current_period_start_timestamp.is_some() {
+                        NaiveDateTime::from_timestamp_opt(
+                            team.time.current_period_start_timestamp.unwrap(),
+                            0,
+                        )
+                    } else {
+                        NaiveDateTime::from_timestamp_opt(team.start_timestamp.unwrap(), 0)
+                    };
+                    let final_time = time_stamp
+                        .unwrap()
+                        .and_local_timezone(Utc)
+                        .unwrap()
+                        .with_timezone(&Toronto)
+                        .format("%l:%M %p %Z")
+                        .to_string();
+                    let match_builder: TennisMatch = TennisMatch {
+                        home_team_name: team.home_team.name,
+                        away_team_name: team.away_team.name,
+                        time: final_time,
+                    };
+
+                    match_array.push(match_builder)
+                }
+            }
+        }
     }
-    let fmt_match_array: String = match_array
-        .iter()
-        .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
-        .to_string();
-    return fmt_match_array;
+    if match_array.is_empty() {
+        return "No matches found".to_string();
+    } else {
+        let fmt_match_array: String = match_array
+            .iter()
+            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
+            .to_string();
+        fmt_match_array
+    }
 }
 
 pub async fn send_live(
@@ -364,9 +398,9 @@ pub async fn send_today_schedule(
     api_key: &str,
     client: &Client,
 ) -> Result<std::string::String, Box<dyn std::error::Error>> {
-    let dt: DelayedFormat<StrftimeItems> = Local::now().format("%d/%m/%Y");
+    let dt_for_api: DelayedFormat<StrftimeItems> = get_today().format("%d/%m/%Y");
     const SCHED_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/";
-    let url: String = format!("{}{}?rapidapi-key={}", SCHED_URL, dt, api_key);
+    let url: String = format!("{}{}?rapidapi-key={}", SCHED_URL, dt_for_api, api_key);
     println!("{}", url);
     let request: Request = client.get(url).build().unwrap();
     let resp: Root = client.execute(request).await?.json::<Root>().await?;

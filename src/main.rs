@@ -79,7 +79,7 @@ impl EventHandler for Bot {
                 "hello" => "hello".to_owned(),
                 "live" => match live::send_live(&self.api_key, &self.client).await {
                     Ok(live) => {
-                        format!("Ongoing matches: \n{}", live)
+                        format!("{}", live)
                     }
                     Err(err) => {
                         format!("Err: {}", err)
@@ -87,7 +87,7 @@ impl EventHandler for Bot {
                 },
                 "today" => match live::send_today_schedule(&self.api_key, &self.client).await {
                     Ok(today) => {
-                        format!("Today's remaining matches: \n{}", today)
+                        format!("{}", today)
                     }
                     Err(err) => {
                         format!("Err: {}", err)
