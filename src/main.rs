@@ -1,4 +1,4 @@
-mod live;
+mod get_matches_logic;
 
 extern crate serde_json;
 use dotenv::dotenv;
@@ -77,7 +77,7 @@ impl EventHandler for Bot {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                "live" => match live::send_live(&self.api_key, &self.client).await {
+                "live" => match get_matches_logic::send_live(&self.api_key, &self.client).await {
                     Ok(live) => {
                         format!("{}", live)
                     }
@@ -85,14 +85,17 @@ impl EventHandler for Bot {
                         format!("Err: {}", err)
                     }
                 },
-                "today" => match live::send_today_schedule(&self.api_key, &self.client).await {
-                    Ok(today) => {
-                        format!("{}", today)
+                "today" => {
+                    match get_matches_logic::send_today_schedule(&self.api_key, &self.client).await
+                    {
+                        Ok(today) => {
+                            format!("{}", today)
+                        }
+                        Err(err) => {
+                            format!("Err: {}", err)
+                        }
                     }
-                    Err(err) => {
-                        format!("Err: {}", err)
-                    }
-                },
+                }
                 command => unreachable!("Unknown command: {}", command),
             };
 
