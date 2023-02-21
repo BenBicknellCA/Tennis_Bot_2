@@ -296,6 +296,12 @@ pub struct TennisMatch {
     pub time: String,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LiveTennisMatch {
+    pub home_team_name: String,
+    pub away_team_name: String,
+}
+
 impl fmt::Display for TennisMatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -303,6 +309,12 @@ impl fmt::Display for TennisMatch {
             "{} vs. {} // {}",
             self.home_team_name, self.away_team_name, self.time
         )
+    }
+}
+
+impl fmt::Display for LiveTennisMatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} vs. {}", self.home_team_name, self.away_team_name,)
     }
 }
 
@@ -332,7 +344,7 @@ pub fn time_builder(event: Event) -> chrono::NaiveDateTime {
     time_stamp
 }
 
-pub fn get_matches(root: Vec<Event>) -> std::string::String {
+pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
     // consider iter
     let mut match_array: Vec<TennisMatch> = Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
@@ -341,16 +353,8 @@ pub fn get_matches(root: Vec<Event>) -> std::string::String {
             let event_day = time_builder(team.clone()).format("%d/%m/%Y").to_string();
             if today_day == event_day {
                 {
-                    let time_stamp = if team.time.current_period_start_timestamp.is_some() {
-                        NaiveDateTime::from_timestamp_opt(
-                            team.time.current_period_start_timestamp.unwrap(),
-                            0,
-                        )
-                    } else {
-                        NaiveDateTime::from_timestamp_opt(team.start_timestamp.unwrap(), 0)
-                    };
+                    let time_stamp = time_builder(team.clone());
                     let final_time = time_stamp
-                        .unwrap()
                         .and_local_timezone(Utc)
                         .unwrap()
                         .with_timezone(&Toronto)
@@ -378,6 +382,31 @@ pub fn get_matches(root: Vec<Event>) -> std::string::String {
     }
 }
 
+pub fn get_live_matches(root: Vec<Event>) -> std::string::String {
+    // consider iter
+    let mut match_array: Vec<LiveTennisMatch> = Vec::new();
+    for team in root {
+        if team.tournament.category.name == "ATP" {
+            let match_builder: LiveTennisMatch = LiveTennisMatch {
+                home_team_name: team.home_team.name,
+                away_team_name: team.away_team.name,
+            };
+
+            match_array.push(match_builder)
+        }
+    }
+
+    if match_array.is_empty() {
+        return "No matches found".to_string();
+    } else {
+        let fmt_match_array: String = match_array
+            .iter()
+            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
+            .to_string();
+        fmt_match_array
+    }
+}
+
 pub async fn send_live(
     api_key: &str,
     client: &Client,
@@ -389,7 +418,7 @@ pub async fn send_live(
     let request: Request = client.get(url).build().unwrap();
 
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
-    let match_results: String = get_matches(resp.events);
+    let match_results: String = get_live_matches(resp.events);
 
     Ok(match_results)
 }
@@ -404,7 +433,7 @@ pub async fn send_today_schedule(
     println!("{}", url);
     let request: Request = client.get(url).build().unwrap();
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
-    let match_results: String = get_matches(resp.events);
+    let match_results: String = get_todays_matches(resp.events);
 
     Ok(match_results)
 }
