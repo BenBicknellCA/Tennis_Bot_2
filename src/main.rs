@@ -1,7 +1,6 @@
 mod get_matches_logic;
 
 extern crate serde_json;
-use dotenv::dotenv;
 use model::application::interaction::InteractionResponseType;
 use serenity::{
     async_trait,
@@ -9,15 +8,16 @@ use serenity::{
         self,
         channel::Message,
         gateway::Ready,
-        prelude::{interaction::Interaction, GuildId},
+        prelude::{command::CommandOptionType, interaction::Interaction, GuildId},
     },
     prelude::*,
 };
 use std::env;
+use std::str::FromStr;
+
 use tracing::{error, info};
 
 const HELP_MESSAGE: &str = "help message";
-const GUILD_ID: GuildId = serenity::model::id::GuildId(***REMOVED***);
 struct Bot {
     api_key: String,
     client: reqwest::Client,
@@ -26,7 +26,11 @@ struct Bot {
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok().expect("Failed to read env file");
+    dotenv::dotenv().ok();
+    let guild_num =
+        u64::from_str(&env::var("GUILD_ID").expect("Expected a guild ID in the environment"))
+            .unwrap();
+    let guild_id = GuildId(guild_num);
     let api_key = env::var("API_KEY").expect("Expected an API key in the environment");
     let token_id = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
@@ -34,7 +38,7 @@ async fn main() {
         .event_handler(Bot {
             api_key: api_key.to_owned(),
             client: reqwest::Client::new(),
-            guild_id: GuildId(GUILD_ID.into()),
+            guild_id: GuildId(guild_id.into()),
         })
         .await
         .expect("Err creating client");
@@ -55,7 +59,6 @@ impl EventHandler for Bot {
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {
-        dotenv().ok();
         println!("{} is connected!", ready.user.name);
 
         let commands = GuildId::set_application_commands(&self.guild_id, &ctx.http, |commands| {
@@ -65,6 +68,18 @@ impl EventHandler for Bot {
                 })
                 .create_application_command(|command| {
                     command.name("today").description("Show today's matches")
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("nextmatch")
+                        .description("Show a player's next match")
+                        .create_option(|option| {
+                            option
+                                .name("player")
+                                .description("Player to lookup next match for")
+                                .kind(CommandOptionType::String)
+                                .required(true)
+                        })
                 })
         })
         .await
@@ -76,11 +91,8 @@ impl EventHandler for Bot {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
-                "hello" => "hello".to_owned(),
                 "live" => match get_matches_logic::send_live(&self.api_key, &self.client).await {
-                    Ok(live) => {
-                        format!("{}", live)
-                    }
+                    Ok(live) => live,
                     Err(err) => {
                         format!("Err: {}", err)
                     }
@@ -88,12 +100,26 @@ impl EventHandler for Bot {
                 "today" => {
                     match get_matches_logic::send_today_schedule(&self.api_key, &self.client).await
                     {
-                        Ok(today) => {
-                            format!("{}", today)
-                        }
+                        Ok(today) => today,
                         Err(err) => {
                             format!("Err: {}", err)
                         }
+                    }
+                }
+                "nextmatch" => {
+                    let argument = command
+                        .data
+                        .options
+                        .iter()
+                        .find(|opt| opt.name == "player")
+                        .cloned();
+                    let value = argument.unwrap().value.unwrap();
+                    let player = value.as_str().unwrap();
+                    let result =
+                        get_matches_logic::player_search(player, &self.api_key, &self.client).await;
+                    match result {
+                        Ok(player) => player,
+                        Err(_err) => "Player/match not found".to_string(),
                     }
                 }
                 command => unreachable!("Unknown command: {}", command),
