@@ -103,6 +103,66 @@ pub struct UniqueTournament {
     pub user_count: Option<i64>,
 }
 
+// find player matches by ID
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerResults {
+    pub results: Vec<Player>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Player {
+    pub entity: PlayerDetails,
+    pub score: f64,
+    #[serde(rename = "type")]
+    pub type_field: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerDetails {
+    pub country: Country,
+    pub disabled: Option<bool>,
+    pub gender: Option<String>,
+    pub id: i64,
+    pub name: String,
+    pub name_code: String,
+    pub national: bool,
+    pub ranking: Option<i64>,
+    pub short_name: String,
+    pub slug: String,
+    pub sport: Sport,
+    pub team_colors: TeamColors,
+    #[serde(rename = "type")]
+    pub type_field: i64,
+    pub user_count: i64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Country {
+    pub alpha2: Option<String>,
+    pub name: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Sport {
+    pub id: i64,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeamColors {
+    pub primary: String,
+    pub secondary: String,
+    pub text: String,
+}
+
 impl fmt::Display for Team {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
@@ -150,18 +210,39 @@ impl fmt::Display for CouldNotFindPlayer {
 }
 
 pub fn get_today() -> chrono::DateTime<chrono::Local> {
-    let date = chrono::Local::now();
-    date
+    chrono::Local::now()
 }
 pub fn time_builder(event: Event) -> chrono::NaiveDateTime {
-    let time_stamp = if event.time.current_period_start_timestamp.is_some() {
+    if event.time.current_period_start_timestamp.is_some() {
         NaiveDateTime::from_timestamp_opt(event.time.current_period_start_timestamp.unwrap(), 0)
             .unwrap()
     } else {
         NaiveDateTime::from_timestamp_opt(event.start_timestamp.unwrap(), 0).unwrap()
-    };
+    }
+}
 
-    time_stamp
+pub fn fmt_match_array(matches_resp: Vec<TennisMatch>) -> std::string::String {
+    if matches_resp.is_empty() {
+        "No matches found".to_string()
+    } else {
+        let fmt_match_array: String = matches_resp
+            .iter()
+            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
+            .to_string();
+        fmt_match_array
+    }
+}
+
+pub fn fmt_live_match_array(matches_resp: Vec<LiveTennisMatch>) -> std::string::String {
+    if matches_resp.is_empty() {
+        "No matches found".to_string()
+    } else {
+        let fmt_match_array: String = matches_resp
+            .iter()
+            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
+            .to_string();
+        fmt_match_array
+    }
 }
 
 pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
@@ -169,7 +250,10 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
     let mut match_array: Vec<TennisMatch> = Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
     for team in root {
-        if team.tournament.category.name == "ATP" && team.status.type_field == "notstarted" {
+        if team.tournament.category.name == "ATP"
+            && team.status.type_field == "notstarted"
+            && !team.tournament.name.to_lowercase().contains("qualifying")
+        {
             let event_day = time_builder(team.clone()).format("%d/%m/%Y").to_string();
             if today_day == event_day {
                 {
@@ -191,15 +275,7 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
             }
         }
     }
-    if match_array.is_empty() {
-        return "No matches found".to_string();
-    } else {
-        let fmt_match_array: String = match_array
-            .iter()
-            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
-            .to_string();
-        fmt_match_array
-    }
+    fmt_match_array(match_array)
 }
 
 pub fn get_live_matches(root: Vec<Event>) -> std::string::String {
@@ -216,18 +292,8 @@ pub fn get_live_matches(root: Vec<Event>) -> std::string::String {
         }
     }
 
-    if match_array.is_empty() {
-        return "No matches found".to_string();
-    } else {
-        let fmt_match_array: String = match_array
-            .iter()
-            .format_with("\n", |tennis, f| f(&format_args!("{}", tennis)))
-            .to_string();
-        fmt_match_array
-    }
+    fmt_live_match_array(match_array)
 }
-
-// pub async fn get_player_matches(root: Vec<Event>) -> std::string::String {}
 
 pub async fn send_live(
     api_key: &str,
@@ -257,14 +323,71 @@ pub async fn send_today_schedule(
     Ok(match_results)
 }
 
-// pub async fn send_player_status(
-//     api_key: &str,
-//     client: &Client,
-// ) -> Result<std::string::String, Box<dyn std::error::Error>> {
-//     const SCHED_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/";
-//     let url: String = format!("{}{}?rapidapi-key={}", SCHED_URL, api_key);
-//     let request: Request = client.get(url).build().unwrap();
-//     let resp: Root = client.execute(request).await?.json::<Root>().await?;
-//     let match_results: String = get_player_matches(resp.events);
-//     Ok(match_results)
-// }
+pub async fn player_search(
+    player: &str,
+    api_key: &str,
+    client: &Client,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let url: String = format!(
+        "https://tennisapi1.p.rapidapi.com/api/tennis/search/{}?rapidapi-key={}",
+        player, api_key
+    );
+    let request: Request = client.get(url).build().expect("Player/match not found");
+    let resp: PlayerResults = client
+        .execute(request)
+        .await?
+        .json::<PlayerResults>()
+        .await?;
+
+    let ids = resp.results[0].entity.id;
+    let player_func = get_player_matches(ids, api_key, client).await?;
+    Ok(player_func)
+}
+
+pub async fn get_player_matches(
+    player_id: i64,
+    api_key: &str,
+    client: &Client,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let url: String = format!(
+        "https://tennisapi1.p.rapidapi.com/api/tennis/player/{}/events/next/0?rapidapi-key={}",
+        player_id, api_key
+    );
+    let request: Request = client.get(url).build().expect("Player/match not found");
+    let resp: Root = client.execute(request).await?.json::<Root>().await?;
+    let match_to_return = resp.events[0].to_owned();
+    let time_stamp = time_builder(match_to_return.clone());
+    let final_time = time_stamp
+        .and_local_timezone(Utc)
+        .unwrap()
+        .with_timezone(&Toronto)
+        .format("%B %e,%l:%M %p %Z")
+        .to_string();
+
+    let match_builder: TennisMatch = TennisMatch {
+        home_team_name: match_to_return.home_team.name,
+        away_team_name: match_to_return.away_team.name,
+        time: final_time,
+    };
+
+    Ok(match_builder.to_string())
+}
+//     for matches in player_results {
+//         {
+//             {
+//                 let time_stamp = time_builder(team.clone());
+//                 let final_time = time_stamp
+//                     .and_local_timezone(Utc)
+//                     .unwrap()
+//                     .with_timezone(&Toronto)
+//                     .format("%l:%M %p %Z")
+//                     .to_string();
+//                 let match_builder: TennisMatch = TennisMatch {
+//                     home_team_name: team.home_team.name,
+//                     away_team_name: team.away_team.name,
+//                     time: final_time,
+//                 };
+//             }
+//             fmt_match_array(match_builder);
+//         }
+//     }
