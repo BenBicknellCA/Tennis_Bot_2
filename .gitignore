@@ -73,6 +73,7 @@ node_modules
 package-lock.json
 package.json
 .env
+deploy.sh
 
 ## Rustdoc GUI tests
 src/test/rustdoc-gui/src/**.lock

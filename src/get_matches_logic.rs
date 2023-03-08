@@ -343,6 +343,7 @@ pub async fn player_search(
         get_player_matches(ids, api_key, client).await?
     } else {
         let ids = resp.results[0].entity.id;
+        println!("{}", ids);
         get_player_matches(ids, api_key, client).await?
     };
 
@@ -361,12 +362,14 @@ pub async fn get_player_matches(
     let request: Request = client.get(url).build().expect("Player/match not found");
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let first_event = resp.events[0].to_owned();
+    println!("{:?}", first_event);
     let match_to_return =
-        if !first_event.slug.contains("double") && !first_event.slug.contains("qualify") {
+        if !first_event.slug.contains("doubles") | !first_event.slug.contains("qualifying") {
             first_event
         } else {
             resp.events[1].to_owned()
         };
+
     let time_stamp = time_builder(match_to_return.clone());
     let final_time = time_stamp
         .and_local_timezone(Utc)
