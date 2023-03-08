@@ -205,7 +205,7 @@ pub struct CouldNotFindPlayer {
 
 impl fmt::Display for CouldNotFindPlayer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Placeholder 1 '{}'", self.name)
+        write!(f, "Could not find '{}'", self.name)
     }
 }
 
@@ -254,16 +254,14 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
             && team.status.type_field == "notstarted"
             && !team.tournament.name.to_lowercase().contains("qualifying")
         {
-            let event_day = time_builder(team.clone()).format("%d/%m/%Y").to_string();
-            if today_day == event_day {
+            let event_day = time_builder(team.clone())
+                .and_local_timezone(Utc)
+                .unwrap()
+                .with_timezone(&Toronto);
+
+            if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
-                    let time_stamp = time_builder(team.clone());
-                    let final_time = time_stamp
-                        .and_local_timezone(Utc)
-                        .unwrap()
-                        .with_timezone(&Toronto)
-                        .format("%l:%M %p %Z")
-                        .to_string();
+                    let final_time = event_day.format("%l:%M %p %Z").to_string();
                     let match_builder: TennisMatch = TennisMatch {
                         home_team_name: team.home_team.name,
                         away_team_name: team.away_team.name,
@@ -339,9 +337,16 @@ pub async fn player_search(
         .json::<PlayerResults>()
         .await?;
 
-    let ids = resp.results[0].entity.id;
-    let player_func = get_player_matches(ids, api_key, client).await?;
-    Ok(player_func)
+    // J.J. Wolf is weird and has two ids, one doesn't work, `398806`, but is the first result when searching `jj wolf`, this forces working ID
+    let call_matches: String = if resp.results[0].entity.id == 398806 {
+        let ids: i64 = 210479;
+        get_player_matches(ids, api_key, client).await?
+    } else {
+        let ids = resp.results[0].entity.id;
+        get_player_matches(ids, api_key, client).await?
+    };
+
+    Ok(call_matches)
 }
 
 pub async fn get_player_matches(
@@ -355,7 +360,13 @@ pub async fn get_player_matches(
     );
     let request: Request = client.get(url).build().expect("Player/match not found");
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
-    let match_to_return = resp.events[0].to_owned();
+    let first_event = resp.events[0].to_owned();
+    let match_to_return =
+        if !first_event.slug.contains("double") && !first_event.slug.contains("qualify") {
+            first_event
+        } else {
+            resp.events[1].to_owned()
+        };
     let time_stamp = time_builder(match_to_return.clone());
     let final_time = time_stamp
         .and_local_timezone(Utc)
@@ -372,22 +383,3 @@ pub async fn get_player_matches(
 
     Ok(match_builder.to_string())
 }
-//     for matches in player_results {
-//         {
-//             {
-//                 let time_stamp = time_builder(team.clone());
-//                 let final_time = time_stamp
-//                     .and_local_timezone(Utc)
-//                     .unwrap()
-//                     .with_timezone(&Toronto)
-//                     .format("%l:%M %p %Z")
-//                     .to_string();
-//                 let match_builder: TennisMatch = TennisMatch {
-//                     home_team_name: team.home_team.name,
-//                     away_team_name: team.away_team.name,
-//                     time: final_time,
-//                 };
-//             }
-//             fmt_match_array(match_builder);
-//         }
-//     }
