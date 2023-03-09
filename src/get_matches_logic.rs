@@ -362,14 +362,11 @@ pub async fn get_player_matches(
     let request: Request = client.get(url).build().expect("Player/match not found");
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let first_event = resp.events[0].to_owned();
-    println!("{:?}", first_event);
     let match_to_return = if first_event.tournament.slug.contains("doubles")
         | first_event.tournament.slug.contains("qualifying")
     {
-        println!("{}", first_event.slug);
         resp.events[1].to_owned()
     } else {
-        println!("{}", first_event.slug);
         first_event
     };
 
