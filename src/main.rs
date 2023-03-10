@@ -6,7 +6,7 @@ use serenity::{
     async_trait,
     model::{
         self,
-        channel::Message,
+        channel::{Embed, Message},
         gateway::Ready,
         prelude::{command::CommandOptionType, interaction::Interaction, GuildId},
     },
@@ -81,6 +81,7 @@ impl EventHandler for Bot {
                                 .required(true)
                         })
                 })
+                .create_application_command(|command| command.name("link").description(":)"))
         })
         .await
         .unwrap();
@@ -122,6 +123,7 @@ impl EventHandler for Bot {
                         Err(_err) => "Player/match not found".to_string(),
                     }
                 }
+                "link" => "***REMOVED***".to_string(),
                 command => unreachable!("Unknown command: {}", command),
             };
 
