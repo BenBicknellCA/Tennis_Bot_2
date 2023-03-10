@@ -6,7 +6,7 @@ use serenity::{
     async_trait,
     model::{
         self,
-        channel::{Embed, Message},
+        channel::Message,
         gateway::Ready,
         prelude::{command::CommandOptionType, interaction::Interaction, GuildId},
     },

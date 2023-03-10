@@ -34,7 +34,7 @@ pub struct Event {
     pub slug: String,
     pub start_timestamp: Option<i64>,
     pub status: Status,
-    pub time: Time,
+    pub time: Option<Time>,
     pub tournament: Tournament,
     pub winner_code: Option<i64>,
 }
@@ -213,11 +213,19 @@ pub fn get_today() -> chrono::DateTime<chrono::Local> {
     chrono::Local::now()
 }
 pub fn time_builder(event: Event) -> chrono::NaiveDateTime {
-    if event.time.current_period_start_timestamp.is_some() {
-        NaiveDateTime::from_timestamp_opt(event.time.current_period_start_timestamp.unwrap(), 0)
-            .unwrap()
+    if event.time.as_ref().is_some() {
+        NaiveDateTime::from_timestamp_opt(
+            event
+                .time
+                .expect("Match missing time2")
+                .current_period_start_timestamp
+                .expect("Match missing time3"),
+            0,
+        )
+        .expect("Match missing time4")
     } else {
-        NaiveDateTime::from_timestamp_opt(event.start_timestamp.unwrap(), 0).unwrap()
+        NaiveDateTime::from_timestamp_opt(event.start_timestamp.expect("Match missing time5"), 0)
+            .expect("Match missing time6")
     }
 }
 
@@ -262,6 +270,7 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
             if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
                     let final_time = event_day.format("%l:%M %p %Z").to_string();
+                    println!("{}", final_time);
                     let match_builder: TennisMatch = TennisMatch {
                         home_team_name: team.home_team.name,
                         away_team_name: team.away_team.name,
