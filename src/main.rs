@@ -123,7 +123,7 @@ impl EventHandler for Bot {
                         Err(_err) => "Player/match not found".to_string(),
                     }
                 }
-                "link" => "***REMOVED***".to_string(),
+                "link" => env::var("LINK").expect("Expected a link in the environment"),
                 command => unreachable!("Unknown command: {}", command),
             };
 
