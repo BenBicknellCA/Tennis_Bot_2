@@ -17,4 +17,4 @@ RUN apt-get update && apt-get -y install ca-certificates libssl-dev libpq-dev &&
 COPY --from=build /usr/local/cargo/bin/tennis_bot /bin
 COPY --from=build /app/.env /bin
 ENV source /bin/.env
-CMD /bin/bash -c "tennis_bot"
+CMD ["tennis_bot"]
