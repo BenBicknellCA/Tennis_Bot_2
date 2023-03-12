@@ -270,7 +270,6 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
             if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
                     let final_time = event_day.format("%l:%M %p %Z").to_string();
-                    println!("{}", final_time);
                     let match_builder: TennisMatch = TennisMatch {
                         home_team_name: team.home_team.name,
                         away_team_name: team.away_team.name,

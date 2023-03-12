@@ -1,5 +1,5 @@
 [package]
-name = "jj_rewrite"
+name = "tennis_bot"
 version = "0.1.0"
 edition = "2021"
 
