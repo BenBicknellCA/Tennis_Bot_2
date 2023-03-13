@@ -1,20 +1,22 @@
-FROM rust:1.68.0 AS build
+
+
+FROM lukemathwalker/cargo-chef:latest-rust-slim-bullseye AS chef
 WORKDIR /app
-ENV CARGO_TARGET_DIR=/target
+
+FROM chef AS planner
 COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-RUN cargo install --path . --verbose --locked
-RUN cargo build --release
+FROM chef AS builder 
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY . .
+RUN cargo build --release --bin tennis_bot
 
 
+FROM debian:bullseye-slim AS runtime
+WORKDIR /app
+COPY --from=builder /app/target/release/tennis_bot /usr/local/bin
 
-
-
-FROM debian:stable-slim
-ENV CARGO_TARGET_DIR=/target
-RUN apt-get update && apt-get -y install ca-certificates libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /usr/local/cargo/bin/tennis_bot /bin
-COPY --from=build /app/.env /bin
-ENV source /bin/.env
-CMD ["tennis_bot"]
+CMD [ "/usr/local/bin/tennis_bot" ]
