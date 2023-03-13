@@ -243,12 +243,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -555,23 +549,6 @@ name = "itoa"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
-
-[[package]]
-name = "jj_rewrite"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "chrono-tz",
- "dotenv",
- "itertools",
- "reqwest",
- "serde",
- "serde_derive",
- "serde_json",
- "serenity",
- "tokio",
- "tracing",
-]
 
 [[package]]
 name = "js-sys"
@@ -1059,6 +1036,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tennis_bot"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "itertools",
+ "reqwest",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serenity",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

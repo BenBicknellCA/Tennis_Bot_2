@@ -26,7 +26,6 @@ struct Bot {
 
 #[tokio::main]
 async fn main() {
-    dotenv::dotenv().ok();
     let guild_num =
         u64::from_str(&env::var("GUILD_ID").expect("Expected a guild ID in the environment"))
             .unwrap();
