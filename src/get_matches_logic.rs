@@ -212,16 +212,13 @@ pub fn get_today() -> chrono::DateTime<chrono::Local> {
     chrono::Local::now()
 }
 pub fn time_builder(event: Event) -> chrono::NaiveDateTime {
-    if event.time.as_ref().is_some() {
-        NaiveDateTime::from_timestamp_opt(
-            event
-                .time
-                .expect("Match missing time2")
-                .current_period_start_timestamp
-                .expect("Match missing time3"),
-            0,
-        )
-        .expect("Match missing time4")
+    let event_time = event
+        .time
+        .expect("Match missing time2")
+        .current_period_start_timestamp;
+    if event_time.as_ref().is_some() {
+        NaiveDateTime::from_timestamp_opt(event_time.expect("Match missing time3"), 0)
+            .expect("Match missing time4")
     } else {
         NaiveDateTime::from_timestamp_opt(event.start_timestamp.expect("Match missing time5"), 0)
             .expect("Match missing time6")
@@ -319,10 +316,15 @@ pub async fn send_today_schedule(
     api_key: &str,
     client: &Client,
 ) -> Result<std::string::String, Box<dyn std::error::Error>> {
-    let dt_for_api: DelayedFormat<StrftimeItems> = get_today().format("%d/%m/%Y");
+    let dt_for_api: DelayedFormat<StrftimeItems> = get_today().format("%d/%-m/%Y");
     const SCHED_URL: &str = "https://tennisapi1.p.rapidapi.com/api/tennis/events/";
-    let url: String = format!("{}{}?rapidapi-key={}", SCHED_URL, dt_for_api, api_key);
-    let request: Request = client.get(url).build().unwrap();
+    let url: String = format!(
+        "{}{}?rapidapi-key={}",
+        SCHED_URL,
+        dt_for_api.to_string().trim(),
+        api_key
+    );
+    let request: Request = client.get(url.clone()).build().unwrap();
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let match_results: String = get_todays_matches(resp.events);
     Ok(match_results)
@@ -350,7 +352,6 @@ pub async fn player_search(
         get_player_matches(ids, api_key, client).await?
     } else {
         let ids = resp.results[0].entity.id;
-        println!("{}", ids);
         get_player_matches(ids, api_key, client).await?
     };
 
