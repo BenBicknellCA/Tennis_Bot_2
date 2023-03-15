@@ -13,7 +13,6 @@ use serenity::{
     prelude::*,
 };
 use std::env;
-use std::str::FromStr;
 
 use tracing::{error, info};
 
@@ -26,14 +25,11 @@ struct Bot {
 
 #[tokio::main]
 async fn main() {
-    let guild_num =
-        u64::from_str(&env::var("GUILD_ID").expect("Expected a guild ID in the environment"))
-            .unwrap();
-    let guild_id = GuildId(guild_num);
-    let api_key = env::var("API_KEY").expect("Expected an API key in the environment");
-    let token_id = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let guild_id = GuildId(974015818243375104);
+    let api_key = "a315a7e08fmsh8614ab90179f23fp1a6568jsn46d5a87a2dd8";
+    let token_id = "MTA0NzY3MDgyNjA5MjIxNjM1MA.Gc2mnq.9Hsa8llrabyZvsWoe433Cw_RwRL18aAQaXMDxo";
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-    let mut client = Client::builder(&token_id, intents)
+    let mut client = Client::builder(token_id, intents)
         .event_handler(Bot {
             api_key: api_key.to_owned(),
             client: reqwest::Client::new(),
