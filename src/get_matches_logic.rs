@@ -254,10 +254,7 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
     let mut match_array: Vec<TennisMatch> = Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
     for team in root {
-        if team.tournament.category.name == "ATP"
-            && team.status.type_field == "notstarted"
-            && !team.tournament.name.to_lowercase().contains("qualifying")
-        {
+        if team.tournament.category.name == "ATP" && team.status.type_field == "notstarted" {
             let event_day = time_builder(team.clone())
                 .and_local_timezone(Utc)
                 .unwrap()
@@ -265,7 +262,10 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
 
             if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
-                    let final_time = event_day.format("%l:%M %p %Z").to_string();
+                    let mut final_time = event_day.format("%l:%M %p %Z").to_string();
+                    if team.tournament.name.to_lowercase().contains("qualifying") {
+                        final_time += " (qualifying)"
+                    }
                     let match_builder: TennisMatch = TennisMatch {
                         home_team_name: team.home_team.name,
                         away_team_name: team.away_team.name,
