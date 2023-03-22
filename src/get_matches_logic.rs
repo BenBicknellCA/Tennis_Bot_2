@@ -169,19 +169,19 @@ impl fmt::Display for Team {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TennisMatch {
-    pub home_team_name: String,
-    pub away_team_name: String,
+pub struct TennisMatch<'a> {
+    pub home_team_name: &'a str,
+    pub away_team_name: &'a str,
     pub time: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LiveTennisMatch {
-    pub home_team_name: String,
-    pub away_team_name: String,
+pub struct LiveTennisMatch<'a> {
+    pub home_team_name: &'a str,
+    pub away_team_name: &'a str,
 }
 
-impl fmt::Display for TennisMatch {
+impl fmt::Display for TennisMatch<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -191,7 +191,7 @@ impl fmt::Display for TennisMatch {
     }
 }
 
-impl fmt::Display for LiveTennisMatch {
+impl fmt::Display for LiveTennisMatch<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} vs. {}", self.home_team_name, self.away_team_name,)
     }
@@ -253,8 +253,11 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
     // consider iter
     let mut match_array: Vec<TennisMatch> = Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
-    for team in root {
-        if team.tournament.category.name == "ATP" && team.status.type_field == "notstarted" {
+    for team in root.iter() {
+        if team.tournament.category.name == "ATP"
+            && team.status.type_field == "notstarted"
+            && !team.tournament.name.to_lowercase().contains("qualifying")
+        {
             let event_day = time_builder(team.clone())
                 .and_local_timezone(Utc)
                 .unwrap()
@@ -262,13 +265,10 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
 
             if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
-                    let mut final_time = event_day.format("%l:%M %p %Z").to_string();
-                    if team.tournament.name.to_lowercase().contains("qualifying") {
-                        final_time += " (qualifying)"
-                    }
+                    let final_time = event_day.format("%l:%M %p %Z").to_string();
                     let match_builder: TennisMatch = TennisMatch {
-                        home_team_name: team.home_team.name,
-                        away_team_name: team.away_team.name,
+                        home_team_name: &team.home_team.name,
+                        away_team_name: &team.away_team.name,
                         time: final_time,
                     };
 
@@ -283,11 +283,11 @@ pub fn get_todays_matches(root: Vec<Event>) -> std::string::String {
 pub fn get_live_matches(root: Vec<Event>) -> std::string::String {
     // consider iter
     let mut match_array: Vec<LiveTennisMatch> = Vec::new();
-    for team in root {
+    for team in root.iter() {
         if team.tournament.category.name == "ATP" {
             let match_builder: LiveTennisMatch = LiveTennisMatch {
-                home_team_name: team.home_team.name,
-                away_team_name: team.away_team.name,
+                home_team_name: &team.home_team.name,
+                away_team_name: &team.away_team.name,
             };
 
             match_array.push(match_builder)
@@ -324,7 +324,7 @@ pub async fn send_today_schedule(
         dt_for_api.to_string().trim(),
         api_key
     );
-    let request: Request = client.get(url.clone()).build().unwrap();
+    let request: Request = client.get(url).build().unwrap();
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let match_results: String = get_todays_matches(resp.events);
     Ok(match_results)
@@ -387,8 +387,8 @@ pub async fn get_player_matches(
         .to_string();
 
     let match_builder: TennisMatch = TennisMatch {
-        home_team_name: match_to_return.home_team.name,
-        away_team_name: match_to_return.away_team.name,
+        home_team_name: &match_to_return.home_team.name,
+        away_team_name: &match_to_return.away_team.name,
         time: final_time,
     };
 
