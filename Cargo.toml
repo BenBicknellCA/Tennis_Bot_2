@@ -11,7 +11,7 @@ serenity = { default-features = false, features = ["client", "gateway", "model",
 tracing = "0.1.37"
 reqwest = { default-features = false, features = ["json", "rustls-tls"], version = "0.11.16" }
 serde = "1.0.158"
-serde_json = "1.0.94"
+serde_json = "1.0.95"
 serde_derive = "1.0.156"
 itertools = "0.10.5"
 chrono = "0.4.24"
