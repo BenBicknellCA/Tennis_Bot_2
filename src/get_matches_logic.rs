@@ -339,7 +339,7 @@ pub async fn player_search(
         "https://tennisapi1.p.rapidapi.com/api/tennis/search/{}?rapidapi-key={}",
         player, api_key
     );
-    let request: Request = client.get(url).build().expect("Player/match not found");
+    let request: Request = client.get(url).build().expect("Player not found");
     let resp: PlayerResults = client
         .execute(request)
         .await?
@@ -347,12 +347,9 @@ pub async fn player_search(
         .await?;
 
     // J.J. Wolf is weird and has two ids, one doesn't work, `398806`, but is the first result when searching `jj wolf`, this forces working ID
-    let call_matches: String = if resp.results[0].entity.id == 398806 {
-        let ids: i64 = 210479;
-        get_player_matches(ids, api_key, client).await?
-    } else {
-        let ids = resp.results[0].entity.id;
-        get_player_matches(ids, api_key, client).await?
+    let call_matches: String = {let mut ids = resp.results[0].entity.id; let player_name = &resp.results[0].entity.name;
+        if ids == 398806 { ids = 210479;}
+        get_player_matches(ids, player_name, api_key, client).await?
     };
 
     Ok(call_matches)
@@ -360,6 +357,7 @@ pub async fn player_search(
 
 pub async fn get_player_matches(
     player_id: i64,
+    player_name: &str,
     api_key: &str,
     client: &Client,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -367,7 +365,7 @@ pub async fn get_player_matches(
         "https://tennisapi1.p.rapidapi.com/api/tennis/player/{}/events/next/0?rapidapi-key={}",
         player_id, api_key
     );
-    let request: Request = client.get(url).build().expect("Player/match not found");
+    let request: Request = client.get(url).build().unwrap_or_else(|_| panic!("Could not find any upcoming matches for {}", player_name));
     let resp: Root = client.execute(request).await?.json::<Root>().await?;
     let first_event = resp.events[0].to_owned();
     let match_to_return = if first_event.tournament.slug.contains("doubles")
