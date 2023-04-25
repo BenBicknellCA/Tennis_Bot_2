@@ -121,7 +121,7 @@ impl EventHandler for Bot {
                         Err(err) => {
 
                             println!("Err: {:?}", err);
-                            format!("Could not find player {:?}", player)
+                            format!("Could not find player")
                         }
                     }
                 }
