@@ -118,7 +118,11 @@ impl EventHandler for Bot {
                         get_matches_logic::player_search(player, &self.api_key, &self.client).await;
                     match result {
                         Ok(player) => player,
-                        Err(_err) => "Player/match not found".to_string(),
+                        Err(err) => {
+
+                            println!("Err: {:?}", err);
+                            format!("Could not find player {:?}", player)
+                        }
                     }
                 }
                 "link" => env::var("LINK").expect("Expected a link in the environment"),
