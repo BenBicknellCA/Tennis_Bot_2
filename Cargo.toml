@@ -9,7 +9,7 @@ edition = "2021"
 tokio = { version = "1.28.0", features = ["rt", "rt-multi-thread", "macros"] }
 serenity = { default-features = false, features = ["client", "gateway", "model", "rustls_backend"], version = "0.11.5" }
 tracing = "0.1.38"
-reqwest = { default-features = false, features = ["json", "rustls-tls"], version = "0.11.16" }
+reqwest = { default-features = false, features = ["json", "rustls-tls"], version = "0.11.17" }
 serde = "1.0.162"
 serde_json = "1.0.96"
 serde_derive = "1.0.156"
