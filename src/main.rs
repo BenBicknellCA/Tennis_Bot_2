@@ -120,7 +120,6 @@ impl EventHandler for Bot {
                     match result {
                         Ok(player) => player,
                         Err(err) => {
-
                             println!("Err: {:?}", err);
                             "Could not find player".to_string()
                         }

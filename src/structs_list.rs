@@ -205,9 +205,6 @@ impl fmt::Display for CouldNotFindPlayer {
     }
 }
 
-
-
-
 // api format
 
 // #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

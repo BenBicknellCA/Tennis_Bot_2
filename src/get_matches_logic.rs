@@ -1,3 +1,4 @@
+use crate::structs_list::*;
 use chrono::{
     format::{DelayedFormat, StrftimeItems},
     prelude::*,
@@ -5,8 +6,6 @@ use chrono::{
 use chrono_tz::America::Toronto;
 use itertools::Itertools;
 use reqwest::{Client, Request};
-use crate::structs_list::*;
-
 
 pub fn get_today() -> chrono::DateTime<chrono::Local> {
     chrono::Local::now()
@@ -15,14 +14,8 @@ pub fn time_builder(event: &Event) -> chrono::NaiveDateTime {
     let binding = event.time.as_ref();
     let time = binding.unwrap().current_period_start_timestamp;
     if let Some(time) = time {
-
-        NaiveDateTime::from_timestamp_opt(time, 0)
-            .expect("Match missing time4")
-
-    }
-    
-
-     else {
+        NaiveDateTime::from_timestamp_opt(time, 0).expect("Match missing time4")
+    } else {
         NaiveDateTime::from_timestamp_opt(event.start_timestamp.expect("Match missing time5"), 0)
             .expect("Match missing time6")
     }
@@ -56,9 +49,9 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
     // consider iter
     let mut match_array: Vec<TennisMatch> = Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
-//    if root.iter().all(|team| team)
+    //    if root.iter().all(|team| team)
     root.iter().for_each(|team| {
-         if team.status.type_field == "notstarted" {
+        if team.status.type_field == "notstarted" {
             let event_day = time_builder(team)
                 .and_local_timezone(Utc)
                 .unwrap()
@@ -154,8 +147,15 @@ pub async fn player_search(
     let call_matches: String = {
         let mut ids = resp.results[0].entity.id;
         let player_name = &resp.results[0].entity.name;
-        if ids == 398806 { ids = 210479;}
-        get_player_matches(ids, api_key, client).await.unwrap_or(format!("Could not find upcoming matches for {:?}", player_name))
+        if ids == 398806 {
+            ids = 210479;
+        }
+        get_player_matches(ids, api_key, client)
+            .await
+            .unwrap_or(format!(
+                "Could not find upcoming matches for {:?}",
+                player_name
+            ))
     };
 
     Ok(call_matches)
@@ -171,15 +171,19 @@ pub async fn get_player_matches(
         player_id, api_key
     );
     let request: Request = client.get(url).build().unwrap();
-    let resp: Root = client.execute(request).await.unwrap_or_else(|error|panic!("ERROR!:{:?}", error)).json::<Root>().await?;
+    let resp: Root = client
+        .execute(request)
+        .await
+        .unwrap_or_else(|error| panic!("ERROR!:{:?}", error))
+        .json::<Root>()
+        .await?;
     let first_event = &resp.events[0];
     let match_to_return = match first_event.tournament.slug.contains("doubles")
-            | first_event.tournament.slug.contains("qualifying") {
+        | first_event.tournament.slug.contains("qualifying")
+    {
         true => &resp.events[1],
         false => first_event,
     };
-
-
 
     let final_time = time_builder(match_to_return)
         .and_local_timezone(Utc)
