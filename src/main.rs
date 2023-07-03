@@ -1,4 +1,5 @@
 mod get_matches_logic;
+mod structs_list;
 
 extern crate serde_json;
 use model::application::interaction::InteractionResponseType;
@@ -121,7 +122,7 @@ impl EventHandler for Bot {
                         Err(err) => {
 
                             println!("Err: {:?}", err);
-                            format!("Could not find player")
+                            "Could not find player".to_string()
                         }
                     }
                 }
