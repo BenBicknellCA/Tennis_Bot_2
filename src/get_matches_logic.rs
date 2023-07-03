@@ -51,11 +51,11 @@ pub fn fmt_live_match_array(matches_resp: &Vec<LiveTennisMatch>) -> std::string:
 
 pub fn get_todays_matches(root: &[Event]) -> std::string::String {
     // consider iter
-    let mut match_array: Vec<TennisMatch> = Vec::new();
+    let match_array: &mut Vec<TennisMatch> = &mut Vec::new();
     let today_day = get_today().format("%d/%m/%Y").to_string();
     //    if root.iter().all(|team| team)
     root.iter().for_each(|team| {
-        if team.status.type_field == "notstarted" {
+        if &team.status.type_field == "notstarted" {
             let event_day = time_builder(team);
 
             if today_day == event_day.format("%d/%m/%Y").to_string() {
@@ -64,7 +64,7 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
                     if team.tournament.name.to_lowercase().contains("qualifying") {
                         final_time += " (qualifying)"
                     }
-                    let match_builder: TennisMatch = TennisMatch {
+                    let match_builder = TennisMatch {
                         home_team_name: &team.home_team.name,
                         away_team_name: &team.away_team.name,
                         time: final_time.to_string(),
@@ -75,7 +75,7 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
             }
         }
     });
-    fmt_match_array(&match_array)
+    fmt_match_array(match_array)
 }
 
 pub fn get_live_matches(root: &[Event]) -> std::string::String {
