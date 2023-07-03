@@ -10,18 +10,22 @@ use reqwest::{Client, Request};
 pub fn get_today() -> chrono::DateTime<chrono::Local> {
     chrono::Local::now()
 }
-pub fn time_builder(event: &Event) -> chrono::NaiveDateTime {
+pub fn time_builder(event: &Event) -> chrono::DateTime<chrono_tz::Tz> {
     let binding = event.time.as_ref();
     let time = binding.unwrap().current_period_start_timestamp;
-    if let Some(time) = time {
+    let time_to_return = if let Some(time) = time {
         NaiveDateTime::from_timestamp_opt(time, 0).expect("Match missing time4")
     } else {
         NaiveDateTime::from_timestamp_opt(event.start_timestamp.expect("Match missing time5"), 0)
             .expect("Match missing time6")
-    }
+    };
+    time_to_return
+        .and_local_timezone(Utc)
+        .unwrap()
+        .with_timezone(&Toronto)
 }
 
-pub fn fmt_match_array(matches_resp: Vec<TennisMatch>) -> std::string::String {
+pub fn fmt_match_array(matches_resp: &Vec<TennisMatch>) -> std::string::String {
     if matches_resp.is_empty() {
         "No matches found".to_string()
     } else {
@@ -33,7 +37,7 @@ pub fn fmt_match_array(matches_resp: Vec<TennisMatch>) -> std::string::String {
     }
 }
 
-pub fn fmt_live_match_array(matches_resp: Vec<LiveTennisMatch>) -> std::string::String {
+pub fn fmt_live_match_array(matches_resp: &Vec<LiveTennisMatch>) -> std::string::String {
     if matches_resp.is_empty() {
         "No matches found".to_string()
     } else {
@@ -52,10 +56,7 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
     //    if root.iter().all(|team| team)
     root.iter().for_each(|team| {
         if team.status.type_field == "notstarted" {
-            let event_day = time_builder(team)
-                .and_local_timezone(Utc)
-                .unwrap()
-                .with_timezone(&Toronto);
+            let event_day = time_builder(team);
 
             if today_day == event_day.format("%d/%m/%Y").to_string() {
                 {
@@ -66,7 +67,7 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
                     let match_builder: TennisMatch = TennisMatch {
                         home_team_name: &team.home_team.name,
                         away_team_name: &team.away_team.name,
-                        time: final_time,
+                        time: final_time.to_string(),
                     };
 
                     match_array.push(match_builder)
@@ -74,7 +75,7 @@ pub fn get_todays_matches(root: &[Event]) -> std::string::String {
             }
         }
     });
-    fmt_match_array(match_array)
+    fmt_match_array(&match_array)
 }
 
 pub fn get_live_matches(root: &[Event]) -> std::string::String {
@@ -91,7 +92,7 @@ pub fn get_live_matches(root: &[Event]) -> std::string::String {
         }
     });
 
-    fmt_live_match_array(match_array)
+    fmt_live_match_array(&match_array)
 }
 
 pub async fn send_live(
@@ -144,13 +145,13 @@ pub async fn player_search(
         .await?;
 
     // J.J. Wolf is weird and has two ids, one doesn't work, `398806`, but is the first result when searching `jj wolf`, this forces working ID
-    let call_matches: String = {
+    let call_matches: &str = {
         let mut ids = resp.results[0].entity.id;
         let player_name = &resp.results[0].entity.name;
         if ids == 398806 {
             ids = 210479;
         }
-        get_player_matches(ids, api_key, client)
+        &get_player_matches(ids, api_key, client)
             .await
             .unwrap_or(format!(
                 "Could not find upcoming matches for {:?}",
@@ -158,7 +159,7 @@ pub async fn player_search(
             ))
     };
 
-    Ok(call_matches)
+    Ok(call_matches.to_string())
 }
 
 pub async fn get_player_matches(
@@ -185,17 +186,12 @@ pub async fn get_player_matches(
         false => first_event,
     };
 
-    let final_time = time_builder(match_to_return)
-        .and_local_timezone(Utc)
-        .unwrap()
-        .with_timezone(&Toronto)
-        .format("%B %e,%l:%M %p %Z")
-        .to_string();
-
     let match_builder: TennisMatch = TennisMatch {
         home_team_name: match_to_return.home_team.name.as_str(),
         away_team_name: match_to_return.away_team.name.as_str(),
-        time: final_time,
+        time: time_builder(match_to_return)
+            .format("%B %e,%l:%M %p %Z")
+            .to_string(),
     };
 
     Ok(match_builder.to_string())

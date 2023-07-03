@@ -188,6 +188,16 @@ impl fmt::Display for TennisMatch<'_> {
     }
 }
 
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} vs. {:?} // {:?}",
+            self.away_team.name, self.home_team.name, self.time
+        )
+    }
+}
+
 impl fmt::Display for LiveTennisMatch<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} vs. {}", self.home_team_name, self.away_team_name,)
