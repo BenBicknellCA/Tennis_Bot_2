@@ -1,6 +1,13 @@
+#![feature(iter_collect_into)]
 mod get_matches_logic;
+<<<<<<< HEAD
 mod structs_list;
 
+||||||| 9b07b57
+
+=======
+mod structs_list;
+>>>>>>> 3d2fead502d5c53302773f738a2b786011c2566a
 extern crate serde_json;
 use model::application::interaction::InteractionResponseType;
 use serenity::{
@@ -87,18 +94,22 @@ impl EventHandler for Bot {
 
         info!("{:#?}", commands);
     }
-
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             let response_content = match command.data.name.as_str() {
-                "live" => match get_matches_logic::send_live(&self.api_key, &self.client).await {
-                    Ok(live) => live,
-                    Err(err) => {
-                        format!("Err: {}", err)
+                "live" => {
+                    match get_matches_logic::send_schedule(&self.api_key, &self.client, "live")
+                        .await
+                    {
+                        Ok(live) => live,
+                        Err(err) => {
+                            format!("Err: {}", err)
+                        }
                     }
-                },
+                }
                 "today" => {
-                    match get_matches_logic::send_today_schedule(&self.api_key, &self.client).await
+                    match get_matches_logic::send_schedule(&self.api_key, &self.client, "upcoming")
+                        .await
                     {
                         Ok(today) => today,
                         Err(err) => {
@@ -129,16 +140,48 @@ impl EventHandler for Bot {
                 command => unreachable!("Unknown command: {}", command),
             };
 
-            let create_interaction_response =
-                command.create_interaction_response(&ctx.http, |response| {
+            if response_content.chars().count() > 1500 {
+                let vec_1: Vec<_> = response_content.lines().to_owned().collect();
+                let (first_matches, second_matches) = vec_1.split_at(14);
+                let resp = command.create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(response_content))
+                        .interaction_response_data(|message| {
+                            message.content(first_matches.join("\n"))
+                        })
                 });
+                let _second_msg = command
+                    .channel_id
+                    .say(&ctx.http, second_matches.join("\n"))
+                    .await;
 
-            if let Err(why) = create_interaction_response.await {
-                eprintln!("Cannot respond to slash command: {}", why)
+                if let Err(why) = resp.await {
+                    eprintln!("Cannot respond to slash command: {}", why)
+                }
+            } else {
+                let create_interaction_response =
+                    command.create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content(response_content))
+                    });
+                if let Err(why) = create_interaction_response.await {
+                    eprintln!("Cannot respond to slash command: {}", why)
+                }
             }
         }
     }
+    //
+    //    async fn response_create(&self, ctx: Context, interaction: Interaction, msg: Message, string_to_send: String) {
+    //
+    //        if msg.content == HELP_MESSAGE {
+    //            if let Err(e) = msg.channel_id.say(&ctx.http, HELP_MESSAGE).await {
+    //                error!("Error sending message: {:?}", e)
+    //            }
+    //        }
+    //
+    //
+    //        if let Interaction::ApplicationCommand(ms) = interaction {
+    //
+    //        }
 }
