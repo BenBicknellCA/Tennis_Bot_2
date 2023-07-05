@@ -1,6 +1,13 @@
 #![feature(iter_collect_into)]
 mod get_matches_logic;
+<<<<<<< HEAD
 mod structs_list;
+
+||||||| 9b07b57
+
+=======
+mod structs_list;
+>>>>>>> 3d2fead502d5c53302773f738a2b786011c2566a
 extern crate serde_json;
 use model::application::interaction::InteractionResponseType;
 use serenity::{
