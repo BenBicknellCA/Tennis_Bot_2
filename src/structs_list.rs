@@ -1,5 +1,6 @@
 // https://rapidapi.com/fluis.lacasse/api/tennisapi1
-
+use chrono::{Local, NaiveDateTime};
+use chrono_tz::America::Toronto;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
@@ -35,10 +36,51 @@ pub struct Event {
     // pub winner_code: Option<i64>,
 }
 
+impl Event {
+    pub fn get_time(&self) -> chrono::DateTime<chrono_tz::Tz> {
+        let binding = &self.time;
+        let accurate_start = self.start_timestamp;
+        let time = binding.as_ref().unwrap();
+        let current_period = time.current_period_start_timestamp;
+        let time_to_return = if let Some(accurate_start) = accurate_start {
+            NaiveDateTime::from_timestamp_opt(accurate_start, 0).expect("Match missing time4")
+        } else {
+            NaiveDateTime::from_timestamp_opt(
+                current_period.expect("current period start timestamp"),
+                0,
+            )
+            .expect("Match missing time6")
+        };
+        time_to_return
+            .and_local_timezone(chrono::Utc)
+            .unwrap()
+            .with_timezone(&Toronto)
+    }
+    pub fn hr_min_ampm_tz(&self) -> String {
+        self.get_time().format("%l:%M %p %Z").to_string()
+    }
+    pub fn day_mnth_yr(&self) -> String {
+        self.get_time().format("%d/%m/%Y").to_string()
+    }
+
+    pub fn live_time(&self) -> String {
+            if self.status.type_field == "inprogress" {"".to_string()} else {format!("/ {}", self.hr_min_ampm_tz())}
+    }
+
+    //    pub fn fmt_match(&self) -> Event {
+    //        Event {
+    //        home_team: self.home_team.name,
+    //        away_team_name: self.away_team.name,
+    //        time: self.hr_min_ampm_tz()
+    //        }
+    //    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Team {
     // pub disabled: Option<Value>,
+    pub country: Country,
     pub id: Option<i64>,
     pub name: String,
     pub short_name: String,
@@ -119,7 +161,7 @@ pub struct Player {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerDetails {
-    // pub country: Country,
+    pub country: Country,
     // pub disabled: Option<bool>,
     // pub gender: Option<String>,
     pub id: i64,
@@ -136,12 +178,12 @@ pub struct PlayerDetails {
     // pub user_count: i64,
 }
 
-// #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Country {
-//     pub alpha2: Option<String>,
-//     pub name: Option<String>,
-// }
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Country {
+    pub alpha2: Option<String>,
+    pub name: Option<String>,
+}
 
 // #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 // #[serde(rename_all = "camelCase")]
@@ -161,29 +203,16 @@ pub struct PlayerDetails {
 
 impl fmt::Display for Team {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TennisMatch<'a> {
-    pub home_team_name: &'a str,
-    pub away_team_name: &'a str,
-    pub time: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LiveTennisMatch<'a> {
-    pub home_team_name: &'a str,
-    pub away_team_name: &'a str,
-}
-
-impl fmt::Display for TennisMatch<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} vs. {} // {}",
-            self.home_team_name, self.away_team_name, self.time
+            "{}  :flag_{}: ",
+            self.name,
+            self.country
+                .alpha2
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .as_str()
         )
     }
 }
@@ -192,15 +221,11 @@ impl fmt::Display for Event {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} vs. {:?} // {:?}",
-            self.away_team.name, self.home_team.name, self.time
+            "{} vs. {} {}",
+            self.home_team,
+            self.away_team,
+            self.live_time()
         )
-    }
-}
-
-impl fmt::Display for LiveTennisMatch<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} vs. {}", self.home_team_name, self.away_team_name,)
     }
 }
 

@@ -1,3 +1,4 @@
+# cargo build --release / compile locally and copy to dockerfile
 FROM debian:unstable-slim
 
 WORKDIR /app
